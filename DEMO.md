@@ -29,7 +29,10 @@ python query.py data.tsv cheese
 python query.py data.tsv cheese please
 
 # try non-orthologous proteins (PKR)
-python query.py data.tsv NP_001129123	NP_013714
+python query.py data.tsv NP_001129123 NP_013714
+
+# extra non-orthologous proteins search
+python query.py data.tsv NP_013714 NP_006613
 
 # try orthologous proteins (EIF2S1)
 python query.py data.tsv NP_004085 NP_012540

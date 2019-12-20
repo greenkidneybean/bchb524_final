@@ -34,10 +34,10 @@ except TypeError:
     print('No hits in database for', args.query1, 'against', args.query2, '\n')
 
 try:
-    print('Query:', hit2[0], 'Hit:', hit2[1], 'Evalue:', hit1[2])
+    print('Query:', hit2[0], 'Hit:', hit2[1], 'Evalue:', hit2[2])
     print(f'{hit2[0]} ({hit2[5]}) - {hit2[4]}\n')
 except TypeError:
     print('No hits in database for', args.query2, 'against', args.query1, '\n')
 
 if hit1 and hit2 != None:
-    print('Orthologous proteins:', hit1[7] and hit2[7] == 'True')
+    print('Orthologous proteins:', hit1[7] == 'True' and hit2[7] == 'True')
