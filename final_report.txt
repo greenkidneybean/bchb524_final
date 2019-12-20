@@ -1,0 +1,160 @@
+BCHB524 Final Project: Blast Database
+
+Michael Chambers - 12/20/19
+
+Results
+# Constructing the Blast database
+$ python Blast_pipe.py GCF_000146045.2_R64_protein.fasta GRCh38_latest_protein.fasta human_yeast_db
+1. Constructing Blast database...
+
+Building a new DB, current time: 12/19/2019 11:53:54
+New DB name:   /users/chambersmj/bchb524_final/human_yeast_db/GCF_000146045.2_R64_protein/GCF_000146045.2_R64_protein.fasta
+New DB title:  human_yeast_db/GCF_000146045.2_R64_protein/GCF_000146045.2_R64_protein.fasta
+Sequence type: Protein
+Keep MBits: T
+Maximum file size: 1000000000B
+Adding sequences from FASTA; added 6002 sequences in 0.210875 seconds.
+
+Building a new DB, current time: 12/19/2019 11:53:55
+New DB name:   /users/chambersmj/bchb524_final/human_yeast_db/GRCh38_latest_protein/GRCh38_latest_protein.fasta
+New DB title:  human_yeast_db/GRCh38_latest_protein/GRCh38_latest_protein.fasta
+Sequence type: Protein
+Keep MBits: T
+Maximum file size: 1000000000B
+Adding sequences from FASTA; added 113275 sequences in 4.24335 seconds.
+   COMPLETE: 5.619651556015015 seconds elapsed
+
+2. Blast Search...
+   COMPLETE: 4778.527126073837 seconds elapsed
+
+3. Parse Blast Results...
+   COMPLETE: 414.012455701828 seconds elapsed
+
+4. Create Blast Results Database...
+   COMPLETE: 83.23256874084473 seconds elapsed
+
+Total time elapsed: 5281.392004966736 seconds
+
+# Query the constructed Blast database
+$ python query.py data.tsv NP_004085 NP_012540
+Query: NP_004085.1 Hit: NP_012540.3 Evalue: 3.003659999999999e-107
+NP_004085.1 (Homo sapiens) - eukaryotic translation initiation factor 2 subunit 1
+
+Query: NP_012540.3 Hit: NP_004085.1 Evalue: 3.003659999999999e-107
+NP_012540.3 (Saccharomyces cerevisiae S288C) - translation initiation factor eIF2 subunit alpha
+
+Orthologous proteins: True
+
+Method
+- Constructing the Blast database (Blast_pipe.py)
+  - Make the Blast search database (1_make_db.py)
+    - INPUT: Protein fasta file
+    - Check that input protein fasta file exists
+    - Execute shell commands to create directory containing Blast database
+    - OUTPUT: Blast database directory with index files
+  - Blast search protein sequences (2_Blast.py)
+    - INPUT: Query protein fasta file, Blast database
+    - Checks for input file status
+    - Execute shell command to run Blast query
+    - OUTPUT: Blast results in .xml format
+  - Parse Blast results (3_Blast.py)
+    - INPUT: Blast results .xml file
+    - Check that input and output files have unique names
+    - Try executing parse_Blast_xml() function
+      - Except IOError reports input file not found
+      - Except ValueError reports input is not in .xml format
+    - OUTPUT: Blast results .tsv
+  - Combine Blast results into single database file
+    - INPUT: two Blast result files in .tsv format
+    - Check that both input files exist
+    - Combine Blast result files together and identify minimal evalues for each query
+    - OUTPUT: final blast database file to query for orthologous proteins
+- Query the constructed blast database file for orthologous proteins
+  - INPUT: two protein accession numbers (one yeast, one human), database file
+  - Check that the database file exists
+  - Parse the database file lines for matches to the query and hit
+  - Try printing the query/hit matches
+    - Except TypeError reports that there was no match for the two accessions
+  - Orthologous protein match
+    - True = reciprocal best hit blast search
+      - the best hit (lowest evalue) for query1 is query2
+      - the best hit for query2 is query1
+    - False = no best match between the query and hit
+      - the best hit for query1 may be query2, but the best hit for query2 is not query1
+
+Strengths
+- Scripts get the job done
+  - I'm happy with both the database construction pipeline and the query script, but there's always room to improve (see below)
+- Concise code, tried to keep lines under 80 characters
+- Stand-alone scripts - to simplify pipeline development
+- Pipeline script generates a project folder from the minimal input data
+
+Weaknesses
+- Hardcoded for specific fasta file input
+  - This is written to specifically deal with the default NCBI RefSeq protein fasta files
+  - Could use this pipeline with other RefSeq fasta files, but not Uniprot or different header formats
+- Not designed to add to the database
+  - I think this would be a nice feature to expand upon in the future and may require a different table strategy
+- Always could add more exceptions
+  - I think there's a proper balance with this, should expect that user has some familiarity with troubleshooting general Python error messages
+  - Some basic sanity checks (does file exist) seem appropriate
+- Better ways to find mutual best hits
+  - Pair lowest evalue and lowest delta between evalues
+  - Utilize the length, score, and HSP data from Blast
+  - Still curious about implementing a network graph approach (directed graph with evalues used for edge weights)
+- Too much code
+  - I did make an effort to make these scripts concise, and I wanted separate scripts to the pipeline
+  - Could take the approach of designing a module and import all methods into a single pipeline script
+  - I'm conflicted with Argparse, I think this is especially useful for new users, but it takes up nearly a third to half the lines in each script
+- Poor handling of file paths
+  - very touchy on where the scripts are run, must be executed from the project root directory
+  - would be nice to tuck the scripts into their own directory yet still have things run smoothly when they're called from a pipeline script
+- Many ideas to expand upon this project:
+  - better identification of mutual alignments
+  - incorporate Snakemake to handle the pipeline scripts
+  - name database to search (GI number, NCBI accession, Uniprot ID)
+  - limited options when running the pipeline
+  - have a separate database for accession search (NCBI GI number, Uniprot ID, etc.)
+
+Tests
+- Pipeline scripts to construct Blast database
+  - all pipeline files
+    - missing input file - each pipeline file will appropriately address if input file is missing
+  - 1_make_db.py
+    - different format fasta files (not default RefSeq format)
+      - this fails to split the fasta sequence headers
+      - does not work well if using the toy ribosome protein datasets but will still generate a workable database file
+  - 2_blast.py
+    - test input and output identical file names - script catches that input and output cannot be identical
+    - input missing blast database - script catches that database not found or is missing index files
+  - 3_parse_blast.py
+    - test input and output identical file names - script catches that input and output cannot be identical
+    - input non-xml file into blast query, returns that blast file not formatted properly
+  - 4_combine_blast.py
+    - input one or two missing input files - caught by script
+- Script that queries the Blast database for orthologous proteins
+  - two queries not in the database: 'yeast', 'human'
+  - one query in the database and the other not: 'yeast', 'NP_001239155'
+  - two queries from the same organism: 'NP_001129123','NP_001239155'
+  - known true positives (based on Inparanoid8 - http://inparanoid.sbc.su.se/cgi-bin/index.cgi)
+    - Human EIF2S1 (NP_004085) and yeast SUI2 ( NP_012540)
+    - Human PRP8 (NP_006436) and yeast PRP8 (NP_012035)
+    - Human MDN1 (NP_055426) and yeast MDN1 (NP_013207)
+    - Human CAD (NP_001293008) and yeast URA2 (NP_012405) NP_001293008 NP_012405
+  - known non-homologous proteins between yeast and humans
+    - Human EIF2AK2 (NP_001129123) and yeast polo kinase CDC5 (NP_013714.1)
+
+What I learned
+- toy datasets are an incredible asset
+  - rapid turnover of ideas
+  - able to try other methods and find methods to speed-up scripts
+  - run scripts with
+- try primary dataset as prototypes are developed
+  - necessary to get a feel for the real dataset
+  - for me this emphasized the importance of methods that were time efficient
+- approach to projects:
+  - think about the minimum requirements to accomplish the task
+  - build the minimum as a prototype with a toy dataset
+  - try implementing the prototype with a full dataset
+  - identify areas of focus to improve
+  - repeat cycle
